@@ -27,12 +27,13 @@
 
         using var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.StrokeAndFill };
 
-        var cx = info.Width / 2f;
-        var cy = info.Height / 2f;
-
-        float baseRadius = Math.Min(info.Width, info.Height) * 0.42f;
+        bool portrait = info.Height > info.Width;
+        float baseRadius = Math.Min(info.Width, info.Height) * (portrait ? 0.36f : 0.42f);
         float pulse = (float)(System.Math.Sin(_t * 2) * 0.05f);
         float radius = baseRadius * (1 + pulse);
+
+        var cx = info.Width / 2f;
+        var cy = info.Height / 2f;
 
         using (var shader = SKShader.CreateRadialGradient(
                    new SKPoint(cx, cy), radius,
@@ -56,48 +57,62 @@
             float angle = p * System.MathF.PI * 2f;
             float rx = radius * 0.75f * System.MathF.Sin(angle * 3 + _t * 0.8f);
             float ry = radius * 0.75f * System.MathF.Cos(angle * 4 + _t * 1.1f);
-            float x = cx + rx;
-            float y = cy + ry;
-            if (i == 0) path.MoveTo(x, y); else path.LineTo(x, y);
+            if (i == 0) path.MoveTo(cx + rx, cy + ry); else path.LineTo(cx + rx, cy + ry);
         }
 
-        using var stroke = new SKPaint {
+        using (var stroke = new SKPaint()
+            {
             IsAntialias = true,
             Style = SKPaintStyle.Stroke,
             StrokeWidth = 2f,
             Color = new SKColor(200, 240, 255, 120)
-        };
-        canvas.DrawPath(path, stroke);
+        })
+        {
+            canvas.DrawPath(path, stroke);
+        }
 
-        using var dotPaint = new SKPaint {
+        using (var dotPaint = new SKPaint()
+        {
             IsAntialias = true,
             Style = SKPaintStyle.Fill,
             Color = new SKColor(255, 255, 255, 210)
-        };
-        int dotCount = 28;
-        for (int i = 0; i < dotCount; i++)
+        })
         {
-            float u = i / (float)dotCount;
-            float angle = u * System.MathF.PI * 2f + _t * 0.6f;
-            float dx = cx + radius * 0.95f * System.MathF.Cos(angle) * 0.55f;
-            float dy = cy + radius * 0.95f * System.MathF.Sin(angle) * 0.55f;
-            float size = 3.5f + (System.MathF.Sin(angle * 3 + _t * 3f) + 1) * 2.8f;
-            canvas.DrawCircle(dx, dy, size, dotPaint);
+            int dotCount = 28;
+            for (int i = 0; i < dotCount; i++)
+            {
+                float u = i / (float)dotCount;
+                float angle = u * System.MathF.PI * 2f + _t * 0.6f;
+                float dx = cx + radius * 0.95f * System.MathF.Cos(angle) * 0.55f;
+                float dy = cy + radius * 0.95f * System.MathF.Sin(angle) * 0.55f;
+                float size = 3.5f + (System.MathF.Sin(angle * 3 + _t * 3f) + 1) * 2.8f;
+                canvas.DrawCircle(dx, dy, size, dotPaint);
+            }
         }
 
-        // Center, translucent site name overlay
-        float fontSize = Math.Min(info.Width, info.Height) * 0.22f;
+        const string text = "tolzy.net";
+        float initialFontSize = Math.Min(info.Width, info.Height) * 0.22f;
         using var typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
-        using var font = new SKFont(typeface, fontSize);
-        using var textPaint = new SKPaint {
+        using var font = new SKFont(typeface, initialFontSize);
+        float textWidth = font.MeasureText(text);
+        float maxWidth = info.Width * 0.88f; // leave 12% horizontal breathing room
+        if (textWidth > maxWidth)
+        {
+            float scale = maxWidth / textWidth;
+            font.Size = font.Size * scale;
+            textWidth = font.MeasureText(text);
+        }
+        // If very tall (landscape very wide), cap size so it doesn't dominate vertically
+        float maxHeight = info.Height * 0.30f;
+        if (font.Size > maxHeight) font.Size = maxHeight;
+
+        using var textPaint = new SKPaint()
+        {
             IsAntialias = true,
-            Color = new SKColor(255, 255, 255, 26), // subtle overlay
+            Color = new SKColor(255, 255, 255, 26),
             Style = SKPaintStyle.Fill
         };
-        const string text = "tolzy.net";
-        float textWidth = font.MeasureText(text);
         var metrics = font.Metrics;
-        // baseline centered vertically
         float baselineY = cy - (metrics.Ascent + metrics.Descent) / 2f;
         canvas.DrawText(text, cx - textWidth / 2f, baselineY, SKTextAlign.Left, font, textPaint);
     }
