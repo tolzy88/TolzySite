@@ -12,9 +12,4 @@
     <PackageReference Include="SkiaSharp.Views.Blazor" Version="3.119.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Layout\" />
-    <Folder Include="Pages\" />
-  </ItemGroup>
-
 </Project>
